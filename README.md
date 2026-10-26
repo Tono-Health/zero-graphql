@@ -6,40 +6,42 @@ Define queries, mutations, input schemas, and business errors. Import your route
 
 ## Define endpoints
 
-Configure your schema, authentication, and access scope once in [`app.ts`](examples/todo/app.ts). Feature code uses that app to define a router:
+Configure your schema, authentication, and access scope once in [`app.ts`](examples/todo/app.ts). Each feature can define its own router; the root router composes them:
 
 ```ts
+// src/routers/todos.ts
 import { z } from "zod";
-import { app } from "./app.ts";
-import { canSeeList } from "./permissions.ts";
+import { app } from "../app.ts";
+import { canSeeList } from "../permissions.ts";
 
-export const router = app.router({
-  lists: {
-    get: app.query
-      .input(z.object({ id: z.string() }))
-      .handler(({ zql, input, user }) =>
-        zql.list.where("id", input.id).where(canSeeList(user)).related("todos").one(),
-      ),
-  },
-  todos: {
-    toggle: app.mutation
-      .input(z.object({ id: z.string(), done: z.boolean() }))
-      .errors({ NOT_FOUND: { message: "Todo not found" } })
-      .handler(async ({ tx, zql, input, user, errors }) => {
-        const todo = await tx.run(
-          zql.todo
-            .where("id", input.id)
-            .whereExists("list", (list) => list.where(canSeeList(user)))
-            .one(),
-        );
-        if (!todo) throw errors.NOT_FOUND();
-        await tx.mutate.todo.update(input);
-      }),
-  },
+export const todosRouter = app.router({
+  toggle: app.mutation
+    .input(z.object({ id: z.string(), done: z.boolean() }))
+    .errors({ NOT_FOUND: { message: "Todo not found" } })
+    .handler(async ({ tx, zql, input, user, errors }) => {
+      const todo = await tx.run(
+        zql.todo
+          .where("id", input.id)
+          .whereExists("list", (list) => list.where(canSeeList(user)))
+          .one(),
+      );
+      if (!todo) throw errors.NOT_FOUND();
+      await tx.mutate.todo.update(input);
+    }),
 });
+```
 
+```ts
+// src/routers/index.ts
+import { app } from "../app.ts";
+import { listsRouter } from "./lists.ts";
+import { todosRouter } from "./todos.ts";
+
+export const router = app.router({ lists: listsRouter, todos: todosRouter });
 export type Router = typeof router;
 ```
+
+The `listsRouter` module follows the same pattern. Nest routers as objects to produce paths such as `lists.get` and `todos.toggle`; the browser infers both from `Router`. See the [complete example](examples/todo/routers/index.ts). Composition needs no merge helper or registration step. Unlike oRPC, `app.router()` currently does not add router-wide middleware or lazy routes; attach guards and middleware to procedures.
 
 Optional inputs and schema defaults work normally: `.input(z.object({ done: z.boolean() }).optional())` lets callers omit the argument. A declared error can also include a `data` schema; the framework validates and transforms its data before sending it, and the client infers the schema's output type.
 
@@ -50,7 +52,7 @@ Create the client once for the signed-in session:
 ```ts
 // web/api.ts
 import { createClient } from "zero-relay/client";
-import type { Router } from "../router.ts";
+import type { Router } from "../routers/index.ts";
 
 export const api = createClient<Router>();
 ```

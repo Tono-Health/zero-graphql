@@ -75,57 +75,70 @@ This is plain Zero, not a framework API: a reusable `where` condition, as in [Ze
 ### 2.3 Queries and mutations
 
 ```ts
-// router.ts
+// routers/lists.ts
+export const listsRouter = app.router({
+  mine: app.query
+    .output(z.object({ id: z.string(), name: z.string() }))
+    .handler(({ zql, user }) => zql.list.where(canSeeList(user)).orderBy("name", "asc")),
+
+  get: app.query.input(z.object({ id: z.string() })).handler(({ zql, input, user }) =>
+    zql.list
+      .where("id", input.id)
+      .where(canSeeList(user))
+      .related("todos", (todos) => todos.orderBy("createdAt", "asc"))
+      .one(),
+  ),
+
+  share: app.mutation
+    .input(z.object({ listID: z.string(), userID: z.string() }))
+    .errors({ NOT_FOUND: { message: "List not found" } })
+    .handler(async ({ tx, zql, input, user, errors }) => {
+      const list = await tx.run(
+        zql.list.where("id", input.listID).where("ownerID", user.userID).one(),
+      );
+      if (!list) throw errors.NOT_FOUND();
+      await tx.mutate.listMember.insert({ listID: input.listID, userID: input.userID });
+    }),
+});
+```
+
+```ts
+// routers/todos.ts
+export const todosRouter = app.router({
+  add: app.mutation
+    .input(z.object({ id: z.string(), listID: z.string(), title: z.string().min(1) }))
+    .errors({ NOT_FOUND: { message: "List not found" } })
+    .handler(async ({ tx, zql, input, user, errors }) => {
+      const list = await tx.run(zql.list.where("id", input.listID).where(canSeeList(user)).one());
+      if (!list) throw errors.NOT_FOUND();
+      await tx.mutate.todo.insert({ ...input, done: false, createdAt: Date.now() });
+    }),
+
+  toggle: app.mutation
+    .input(z.object({ id: z.string(), done: z.boolean() }))
+    .errors({ NOT_FOUND: { message: "Todo not found" } })
+    .handler(async ({ tx, zql, input, user, errors }) => {
+      const todo = await tx.run(
+        zql.todo
+          .where("id", input.id)
+          .whereExists("list", (list) => list.where(canSeeList(user)))
+          .one(),
+      );
+      if (!todo) throw errors.NOT_FOUND();
+      await tx.mutate.todo.update({ id: input.id, done: input.done });
+    }),
+});
+```
+
+```ts
+// routers/index.ts
+import { app } from "../app.ts";
+import { listsRouter } from "./lists.ts";
+import { todosRouter } from "./todos.ts";
+
 export const router = app.router({
-  lists: {
-    mine: app.query
-      .output(z.object({ id: z.string(), name: z.string() })) // the only fields that leave the relay
-      .handler(({ zql, user }) => zql.list.where(canSeeList(user)).orderBy("name", "asc")),
-
-    get: app.query.input(z.object({ id: z.string() })).handler(({ zql, input, user }) =>
-      zql.list
-        .where("id", input.id)
-        .where(canSeeList(user))
-        .related("todos", (todos) => todos.orderBy("createdAt", "asc"))
-        .one(),
-    ),
-
-    share: app.mutation
-      .input(z.object({ listID: z.string(), userID: z.string() }))
-      .errors({ NOT_FOUND: { message: "List not found" } })
-      .handler(async ({ tx, zql, input, user, errors }) => {
-        const list = await tx.run(
-          zql.list.where("id", input.listID).where("ownerID", user.userID).one(),
-        );
-        if (!list) throw errors.NOT_FOUND();
-        await tx.mutate.listMember.insert({ listID: input.listID, userID: input.userID });
-      }),
-  },
-
-  todos: {
-    add: app.mutation
-      .input(z.object({ id: z.string(), listID: z.string(), title: z.string().min(1) }))
-      .errors({ NOT_FOUND: { message: "List not found" } })
-      .handler(async ({ tx, zql, input, user, errors }) => {
-        const list = await tx.run(zql.list.where("id", input.listID).where(canSeeList(user)).one());
-        if (!list) throw errors.NOT_FOUND();
-        await tx.mutate.todo.insert({ ...input, done: false, createdAt: Date.now() });
-      }),
-
-    toggle: app.mutation
-      .input(z.object({ id: z.string(), done: z.boolean() }))
-      .errors({ NOT_FOUND: { message: "Todo not found" } })
-      .handler(async ({ tx, zql, input, user, errors }) => {
-        const todo = await tx.run(
-          zql.todo
-            .where("id", input.id)
-            .whereExists("list", (list) => list.where(canSeeList(user)))
-            .one(),
-        );
-        if (!todo) throw errors.NOT_FOUND();
-        await tx.mutate.todo.update({ id: input.id, done: input.done });
-      }),
-  },
+  lists: listsRouter,
+  todos: todosRouter,
 });
 
 export type Router = typeof router;
@@ -175,7 +188,7 @@ const relay = cloudflare(app, {
 ```ts
 // web/api.ts
 import { createClient } from "zero-relay/client";
-import type { Router } from "../router.ts";
+import type { Router } from "../routers/index.ts";
 
 export const api = createClient<Router>(); // connects to /zero/live when first used
 ```
@@ -493,7 +506,7 @@ Builders are immutable, as in oRPC: every method returns a new builder, so parti
 | `.meta({...})`      | Yes         | Yes            | Queries: `ttl`, `audit`. Mutations: `ack`, `audit`.                          |
 | `.handler(fn)`      | Yes         | Yes            | The business logic. Ends the chain.                                          |
 
-`app.router({...})` takes a plain nested object. Paths become Zero names (`todos.toggle`) and client paths (`api.todos.toggle`).
+`app.router({...})` takes a plain nested object and preserves its type. Feature routers can live in separate modules and be nested or spread into a root router; each procedure's full path comes from the keys in that root object. Paths become Zero names (`todos.toggle`) and client paths (`api.todos.toggle`). This is similar to [oRPC's plain-object routers](https://orpc.dev/docs/router), but router-level middleware and lazy routers are not implemented here. Attach guards and middleware to individual procedures.
 
 Handler arguments:
 

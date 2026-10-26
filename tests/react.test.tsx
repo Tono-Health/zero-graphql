@@ -9,7 +9,7 @@ import { RelayError } from "../src/errors.ts";
 import { CloseCode } from "../src/internal/protocol.ts";
 import { useMutation, useQuery } from "../src/react.ts";
 import type { MutationProcedure, QueryProcedure } from "../src/procedure.ts";
-import type { Router } from "../examples/todo/router.ts";
+import type { Router } from "../examples/todo/routers/index.ts";
 import { FakeWebSocket } from "./helpers/fake-websocket.ts";
 
 let container: HTMLDivElement;

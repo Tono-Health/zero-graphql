@@ -2,10 +2,29 @@ import { expect, expectTypeOf, test } from "vite-plus/test";
 import { z } from "zod";
 import type { QueryRef, RelayClient, SafeResult } from "../src/client.ts";
 import type { ErrorConstructors, ErrorUnion, RelayError } from "../src/errors.ts";
-import { router, type Router } from "../examples/todo/router.ts";
+import { compileRouter } from "../src/internal/compile.ts";
+import { app } from "../examples/todo/app.ts";
+import { router, type Router } from "../examples/todo/routers/index.ts";
+import { listsRouter } from "../examples/todo/routers/lists.ts";
+import { todosRouter } from "../examples/todo/routers/todos.ts";
 
 type Api = RelayClient<Router>;
 type Snapshot<R> = R extends QueryRef<any, infer D> ? { data: D } : never;
+
+test("feature routers compose into the root's Zero and client paths", () => {
+  expect(router.lists).toBe(listsRouter);
+  expect(router.todos).toBe(todosRouter);
+
+  const compiled = compileRouter(app, router);
+  expect([...compiled.procedures.keys()]).toEqual([
+    "lists.mine",
+    "lists.get",
+    "lists.share",
+    "todos.add",
+    "todos.toggle",
+  ]);
+  expect(compiled.procedures.get("todos.toggle")?.def).toBe(todosRouter.toggle["~def"]);
+});
 
 test("procedures record their definition", () => {
   const { mine } = router.lists;

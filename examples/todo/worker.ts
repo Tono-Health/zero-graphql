@@ -2,7 +2,7 @@ import { zeroPostgresJS } from "@rocicorp/zero/server/adapters/postgresjs";
 import { cloudflare, type ExecutionContextLike } from "zero-relay/cloudflare";
 import { app } from "./app.ts";
 import { databaseURL, type Env } from "./env.ts";
-import { router } from "./router.ts";
+import { router } from "./routers/index.ts";
 import { schema } from "./schema.ts";
 
 /** On a real Worker, `wrangler types` generates this from the Wrangler config. */

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, test, vi } from "vite-plus/test";
 import { createClient, type ConnectionStatus } from "../src/client.ts";
 import { RelayError } from "../src/errors.ts";
 import { CloseCode, PROTOCOL } from "../src/internal/protocol.ts";
-import type { Router } from "../examples/todo/router.ts";
+import type { Router } from "../examples/todo/routers/index.ts";
 import { FakeWebSocket } from "./helpers/fake-websocket.ts";
 
 let doc: EventTarget & { visibilityState: DocumentVisibilityState };

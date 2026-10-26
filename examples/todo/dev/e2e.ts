@@ -7,7 +7,7 @@
 
 import postgres from "postgres";
 import { createClient, type ConnectionStatus, type QueryRef } from "../../../src/client.ts";
-import type { Router } from "../router.ts";
+import type { Router } from "../routers/index.ts";
 import { signSession } from "../users.ts";
 
 const BASE = "http://localhost:8798";

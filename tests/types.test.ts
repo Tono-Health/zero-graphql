@@ -4,7 +4,7 @@ import { createClient } from "zero-relay/client";
 import { z } from "zod";
 import { app, type User } from "../examples/todo/app.ts";
 import { canSeeList } from "../examples/todo/permissions.ts";
-import type { Router } from "../examples/todo/router.ts";
+import type { Router } from "../examples/todo/routers/index.ts";
 import { schema } from "../examples/todo/schema.ts";
 
 // A partition this library knows nothing about: one relay per list, shared by everyone viewing it.

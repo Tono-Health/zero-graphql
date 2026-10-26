@@ -2,7 +2,7 @@ import { Container, getContainer } from "@cloudflare/containers";
 import { zeroPostgresJS } from "@rocicorp/zero/server/adapters/postgresjs";
 import { cloudflare, type ExecutionContextLike } from "zero-relay/cloudflare";
 import { app } from "../todo/app.ts";
-import { router } from "../todo/router.ts";
+import { router } from "../todo/routers/index.ts";
 import { schema } from "../todo/schema.ts";
 import { signSession } from "../todo/users.ts";
 import type { WorkerEnv } from "./alchemy.run.ts";
