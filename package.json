@@ -1,0 +1,84 @@
+{
+  "name": "zero-relay",
+  "version": "0.0.0",
+  "description": "Server-side Zero clients, partitioned per user or tenant, serving live data to thin browser clients.",
+  "homepage": "https://github.com/Tono-Health/zero-relay#readme",
+  "bugs": {
+    "url": "https://github.com/Tono-Health/zero-relay/issues"
+  },
+  "license": "MIT",
+  "author": "Ethan Cohen <ethanvcohen@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tono-Health/zero-relay.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./client": "./dist/client.mjs",
+    "./cloudflare": "./dist/cloudflare.mjs",
+    "./react": "./dist/react.mjs",
+    "./server": "./dist/server.mjs",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "vp pack",
+    "dev": "vp pack --watch",
+    "test": "vp test",
+    "check": "vp check",
+    "prepublishOnly": "vp run build",
+    "prepare": "vp config"
+  },
+  "dependencies": {
+    "effect": "4.0.6"
+  },
+  "devDependencies": {
+    "@alchemy.run/cloudflare": "2.0.0-beta.84",
+    "@alchemy.run/docker": "2.0.0-beta.84",
+    "@cloudflare/containers": "^0.3.7",
+    "@cloudflare/workers-types": "^5.20261024.1",
+    "@effect/platform-node": "4.0.5",
+    "@rocicorp/zero": "^1.11.3",
+    "@standard-schema/spec": "^1.1.0",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "alchemy": "2.0.0-beta.84",
+    "bumpp": "^12.3.0",
+    "happy-dom": "^21.0.4",
+    "postgres": "3.4.7",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "^7.0.2",
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "wrangler": "^4.152.0",
+    "zod": "^4.6.7"
+  },
+  "peerDependencies": {
+    "@rocicorp/zero": "^1.11.0",
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.15.0",
+      "onFail": "download"
+    }
+  },
+  "inlinedDependencies": {
+    "@standard-schema/spec": "1.1.0"
+  }
+}

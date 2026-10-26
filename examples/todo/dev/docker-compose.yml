@@ -1,0 +1,45 @@
+name: zero-relay-todo
+
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: todo
+    ports:
+      - "127.0.0.1:5443:5432"
+    command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=5
+    volumes:
+      - ./seed.sql:/docker-entrypoint-initdb.d/seed.sql:ro
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d todo"]
+      interval: 2s
+      retries: 30
+
+  zero-cache:
+    image: rocicorp/zero:1.11.3
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:4859:4848"
+    environment:
+      ZERO_UPSTREAM_DB: postgres://postgres:postgres@postgres:5432/todo
+      ZERO_CVR_DB: postgres://postgres:postgres@postgres:5432/todo
+      ZERO_CHANGE_DB: postgres://postgres:postgres@postgres:5432/todo
+      ZERO_REPLICA_FILE: /data/replica.db
+      ZERO_ADMIN_PASSWORD: dev
+      ZERO_QUERY_URL: http://host.docker.internal:8798/zero/query
+      ZERO_MUTATE_URL: http://host.docker.internal:8798/zero/mutate
+    tmpfs:
+      - /data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4848/keepalive"]
+      interval: 2s
+      start_period: 60s
+      retries: 60

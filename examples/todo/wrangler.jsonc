@@ -1,0 +1,20 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "zero-relay-todo",
+  "main": "worker.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "durable_objects": {
+    "bindings": [{ "name": "RELAY", "class_name": "Relay" }],
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Relay"] }],
+  "dev": { "port": 8798 },
+  // Local development values, matching dev/docker-compose.yml. Use secrets in production.
+  "vars": {
+    "ZERO_CACHE_URL": "http://localhost:4859",
+    "DATABASE_URL": "postgres://postgres:postgres@localhost:5443/todo",
+    "ZERO_RELAY_SECRET": "dev-relay-secret",
+    "SESSION_SECRET": "dev-session-secret",
+    "ADMIN_TOKEN": "dev-admin-token",
+  },
+}
